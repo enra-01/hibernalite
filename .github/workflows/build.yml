@@ -19,8 +19,12 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Configure Repositories
+    - name: Apply HibernaLite v1.1.0 Updates (Memory, Widget, Speed)
       run: |
+        mkdir -p hibernalite/app/src/main/java/com/hibernalite/app/widget
+        mkdir -p hibernalite/app/src/main/res/xml
+        mkdir -p hibernalite/app/src/main/res/values-in
+
         cat << 'EOF' > hibernalite/settings.gradle.kts
         pluginManagement {
             repositories {
@@ -38,6 +42,817 @@ jobs:
         }
         rootProject.name = "HibernaLite"
         include(":app")
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/AndroidManifest.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/tools">
+
+            <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
+            <uses-permission
+                android:name="android.permission.QUERY_ALL_PACKAGES"
+                tools:ignore="QueryAllPackagesPermission" />
+
+            <application
+                android:allowBackup="true"
+                android:dataExtractionRules="@xml/data_extraction_rules"
+                android:fullBackupContent="@xml/backup_rules"
+                android:icon="@mipmap/ic_launcher"
+                android:label="@string/app_name"
+                android:roundIcon="@mipmap/ic_launcher_round"
+                android:supportsRtl="true"
+                android:theme="@style/Theme.HibernaLite"
+                tools:targetApi="31">
+
+                <activity
+                    android:name=".MainActivity"
+                    android:exported="true"
+                    android:screenOrientation="portrait"
+                    tools:ignore="LockedOrientationActivity">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+
+                <service
+                    android:name=".service.HibernationAccessibilityService"
+                    android:exported="true"
+                    android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+                    <intent-filter>
+                        <action android:name="android.accessibilityservice.AccessibilityService" />
+                    </intent-filter>
+                    <meta-data
+                        android:name="android.accessibilityservice"
+                        android:resource="@xml/accessibility_service_config" />
+                </service>
+
+                <receiver
+                    android:name=".widget.RamCleanerWidgetProvider"
+                    android:exported="true"
+                    android:label="HibernaLite Widget">
+                    <intent-filter>
+                        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                        <action android:name="com.hibernalite.app.ACTION_TRIGGER_CLEAN" />
+                    </intent-filter>
+                    <meta-data
+                        android:name="android.appwidget.provider"
+                        android:resource="@xml/widget_ram_cleaner_info" />
+                </receiver>
+            </application>
+        </manifest>
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/res/drawable/bg_widget.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <shape xmlns:android="http://schemas.android.com/apk/res/android"
+            android:shape="oval">
+            <gradient
+                android:angle="135"
+                android:startColor="#0D9488"
+                android:endColor="#0284C7"
+                android:type="linear" />
+            <stroke
+                android:width="2dp"
+                android:color="#FFFFFF" />
+        </shape>
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/res/xml/widget_ram_cleaner_info.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+            android:minWidth="40dp"
+            android:minHeight="40dp"
+            android:targetCellWidth="1"
+            android:targetCellHeight="1"
+            android:updatePeriodMillis="0"
+            android:initialLayout="@layout/widget_ram_cleaner"
+            android:resizeMode="none"
+            android:widgetCategory="home_screen"
+            android:description="@string/widget_description" />
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/res/layout/widget_ram_cleaner.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/widgetRoot"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:padding="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_widget"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="6dp">
+
+                <ImageView
+                    android:id="@+id/ivWidgetIcon"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:contentDescription="Boost RAM"
+                    android:src="@drawable/ic_clean" />
+
+                <TextView
+                    android:id="@+id/tvWidgetText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="RAM"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </RelativeLayout>
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/res/values/strings.xml
+        <resources>
+            <string name="app_name">HibernaLite</string>
+            <string name="app_tagline">Ad-Free RAM &amp; App Hibernator</string>
+            <string name="ram_usage_title">RAM Usage</string>
+            <string name="ram_details_format">Used: %1$s / Total: %2$s (Free: %3$s)</string>
+            <string name="btn_hibernate_all">Hibernate Selected Apps</string>
+            <string name="btn_quick_clean">Quick RAM Clean</string>
+            <string name="apps_list_title">Apps Running / Installed</string>
+            <string name="apps_count_format">%1$d apps selected for hibernation</string>
+            <string name="enable_accessibility_title">Accessibility Service Needed</string>
+            <string name="enable_accessibility_desc">To automatically hibernate apps without root, HibernaLite needs Accessibility permission to click Force Stop in Settings. No personal data is ever collected.</string>
+            <string name="btn_open_settings">Open Settings</string>
+            <string name="btn_cancel">Cancel</string>
+            <string name="accessibility_service_desc">Automates clicking Force Stop for selected background apps to free RAM.</string>
+            <string name="toast_quick_clean_done">Freed %1$s RAM cache across %2$d apps!</string>
+            <string name="toast_hibernating">Hibernating apps, please wait…</string>
+            <string name="toast_hibernation_complete">Hibernation complete! Freed background processes.</string>
+            <string name="search_hint">Search apps…</string>
+            <string name="whitelist_info">Uncheck apps you don\'t want to hibernate (e.g. WhatsApp, Alarm)</string>
+            <string name="no_apps_found">No third-party apps found</string>
+            <string name="widget_description">1-Tap 1x1 Widget to boost RAM &amp; hibernate apps</string>
+            <string name="widget_cleaned_format">RAM Boosted! Freed %1$s (%2$d apps hibernated)</string>
+        </resources>
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/res/values-in/strings.xml
+        <resources>
+            <string name="app_name">HibernaLite</string>
+            <string name="app_tagline">Pembersih RAM &amp; Hibernasi Tanpa Iklan</string>
+            <string name="ram_usage_title">Penggunaan RAM</string>
+            <string name="ram_details_format">Terpakai: %1$s / Total: %2$s (Tersedia: %3$s)</string>
+            <string name="btn_hibernate_all">Hibernasi Aplikasi Terpilih</string>
+            <string name="btn_quick_clean">Pembersihan RAM Cepat</string>
+            <string name="apps_list_title">Daftar Aplikasi Latar Belakang</string>
+            <string name="apps_count_format">%1$d aplikasi dipilih untuk dihibernasi</string>
+            <string name="enable_accessibility_title">Aktivasi Aksesibilitas Diperlukan</string>
+            <string name="enable_accessibility_desc">Untuk menidurkan aplikasi secara otomatis tanpa root, HibernaLite memerlukan izin Aksesibilitas guna menekan tombol Paksa Berhenti di Pengaturan secara otomatis. Privasi Anda 100% aman tanpa koneksi internet.</string>
+            <string name="btn_open_settings">Buka Pengaturan</string>
+            <string name="btn_cancel">Batal</string>
+            <string name="accessibility_service_desc">Mengotomatiskan penekanan Paksa Berhenti pada aplikasi latar belakang untuk melegakan RAM.</string>
+            <string name="toast_quick_clean_done">%1$s RAM dibebaskan dari %2$d aplikasi!</string>
+            <string name="toast_hibernating">Sedang menghibernasi aplikasi, mohon tunggu…</string>
+            <string name="toast_hibernation_complete">Hibernasi selesai! RAM berhasil dibersihkan.</string>
+            <string name="search_hint">Cari aplikasi…</string>
+            <string name="whitelist_info">Hilangkan centang pada aplikasi penting (misal: WhatsApp, Alarm) agar tidak ikut ditutup</string>
+            <string name="no_apps_found">Tidak ada aplikasi pihak ketiga ditemukan</string>
+            <string name="widget_description">Widget 1x1 Sekali Ketuk untuk melegakan RAM &amp; menidurkan aplikasi</string>
+            <string name="widget_cleaned_format">RAM Bersih! %1$s dibebaskan (%2$d aplikasi dihibernasi)</string>
+        </resources>
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/java/com/hibernalite/app/util/MemoryHelper.kt
+        package com.hibernalite.app.util
+
+        import android.app.ActivityManager
+        import android.content.Context
+        import android.content.SharedPreferences
+        import android.content.pm.ApplicationInfo
+        import android.content.pm.PackageManager
+        import com.hibernalite.app.model.AppInfo
+        import java.util.Locale
+
+        object MemoryHelper {
+            private const val PREFS_NAME = "hibernalite_prefs"
+            private const val KEY_EXCLUDED_PACKAGES = "key_excluded_packages"
+
+            data class RamStatus(
+                val totalBytes: Long,
+                val availableBytes: Long,
+                val usedBytes: Long,
+                val usedPercentage: Int
+            )
+
+            private fun getPrefs(context: Context): SharedPreferences {
+                return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            }
+
+            fun getExcludedPackages(context: Context): Set<String> {
+                val prefs = getPrefs(context)
+                return prefs.getStringSet(KEY_EXCLUDED_PACKAGES, emptySet()) ?: emptySet()
+            }
+
+            fun setPackageExcluded(context: Context, packageName: String, isExcluded: Boolean) {
+                val prefs = getPrefs(context)
+                val currentSet = prefs.getStringSet(KEY_EXCLUDED_PACKAGES, emptySet())?.toMutableSet() ?: mutableSetOf()
+                if (isExcluded) {
+                    currentSet.add(packageName)
+                } else {
+                    currentSet.remove(packageName)
+                }
+                prefs.edit().putStringSet(KEY_EXCLUDED_PACKAGES, currentSet).apply()
+            }
+
+            fun getRamStatus(context: Context): RamStatus {
+                val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                val memInfo = ActivityManager.MemoryInfo()
+                actManager.getMemoryInfo(memInfo)
+
+                val total = memInfo.totalMem
+                val available = memInfo.availMem
+                val used = total - available
+                val percentage = if (total > 0) ((used * 100) / total).toInt() else 0
+
+                return RamStatus(
+                    totalBytes = total,
+                    availableBytes = available,
+                    usedBytes = used,
+                    usedPercentage = percentage.coerceIn(0, 100)
+                )
+            }
+
+            fun formatBytes(bytes: Long): String {
+                val mb = bytes / (1024.0 * 1024.0)
+                val gb = bytes / (1024.0 * 1024.0 * 1024.0)
+
+                return if (gb >= 1.0) {
+                    String.format(Locale.getDefault(), "%.2f GB", gb)
+                } else {
+                    String.format(Locale.getDefault(), "%.0f MB", mb)
+                }
+            }
+
+            fun getInstalledUserApps(context: Context): List<AppInfo> {
+                val pm = context.packageManager
+                val selfPackage = context.packageName
+                val excludedPackages = getExcludedPackages(context)
+
+                val systemExclusions = setOf(
+                    "android",
+                    "com.android.systemui",
+                    "com.android.settings",
+                    "com.android.phone",
+                    "com.google.android.gms",
+                    "com.google.android.gsf",
+                    "com.google.android.inputmethod.latin",
+                    "com.android.inputmethod.latin",
+                    "com.realme.launcher",
+                    "com.coloros.launcher",
+                    "com.oppo.launcher"
+                )
+
+                val installedPackages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+                val appList = mutableListOf<AppInfo>()
+
+                for (app in installedPackages) {
+                    val pkg = app.packageName
+                    if (pkg == selfPackage || systemExclusions.contains(pkg)) {
+                        continue
+                    }
+
+                    val isSystem = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                    val isUpdatedSystem = (app.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+
+                    if (!isSystem || isUpdatedSystem) {
+                        val label = pm.getApplicationLabel(app).toString()
+                        val icon = try {
+                            pm.getApplicationIcon(app)
+                        } catch (e: Exception) {
+                            null
+                        }
+
+                        val isSelected = !excludedPackages.contains(pkg)
+
+                        appList.add(
+                            AppInfo(
+                                appName = label,
+                                packageName = pkg,
+                                icon = icon,
+                                isSelected = isSelected,
+                                isSystemApp = isSystem
+                            )
+                        )
+                    }
+                }
+
+                return appList.sortedBy { it.appName.lowercase(Locale.getDefault()) }
+            }
+
+            fun quickClean(context: Context, packages: List<String>): Long {
+                val beforeStatus = getRamStatus(context)
+                val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                for (pkg in packages) {
+                    try {
+                        actManager.killBackgroundProcesses(pkg)
+                    } catch (e: Exception) {
+                    }
+                }
+                val afterStatus = getRamStatus(context)
+                val freed = afterStatus.availableBytes - beforeStatus.availableBytes
+                return if (freed > 0) freed else 0L
+            }
+        }
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/java/com/hibernalite/app/adapter/AppListAdapter.kt
+        package com.hibernalite.app.adapter
+
+        import android.view.LayoutInflater
+        import android.view.View
+        import android.view.ViewGroup
+        import android.widget.ImageView
+        import android.widget.TextView
+        import androidx.recyclerview.widget.RecyclerView
+        import com.google.android.material.checkbox.MaterialCheckBox
+        import com.hibernalite.app.R
+        import com.hibernalite.app.model.AppInfo
+        import com.hibernalite.app.util.MemoryHelper
+
+        class AppListAdapter(
+            private var apps: List<AppInfo>,
+            private val onSelectionChanged: (selectedCount: Int) -> Unit
+        ) : RecyclerView.Adapter<AppListAdapter.AppViewHolder>() {
+
+            class AppViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+                val ivIcon: ImageView = itemView.findViewById(R.id.ivAppIcon)
+                val tvName: TextView = itemView.findViewById(R.id.tvAppName)
+                val tvPkg: TextView = itemView.findViewById(R.id.tvPackageName)
+                val cbHibernate: MaterialCheckBox = itemView.findViewById(R.id.cbHibernate)
+            }
+
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.item_app, parent, false)
+                return AppViewHolder(view)
+            }
+
+            override fun onBindViewHolder(holder: AppViewHolder, position: Int) {
+                val app = apps[position]
+                holder.tvName.text = app.appName
+                holder.tvPkg.text = app.packageName
+
+                if (app.icon != null) {
+                    holder.ivIcon.setImageDrawable(app.icon)
+                } else {
+                    holder.ivIcon.setImageResource(R.drawable.ic_launcher_foreground)
+                }
+
+                holder.cbHibernate.setOnCheckedChangeListener(null)
+                holder.cbHibernate.isChecked = app.isSelected
+
+                holder.cbHibernate.setOnCheckedChangeListener { view, isChecked ->
+                    app.isSelected = isChecked
+                    MemoryHelper.setPackageExcluded(view.context, app.packageName, !isChecked)
+                    onSelectionChanged(getSelectedApps().size)
+                }
+
+                holder.itemView.setOnClickListener {
+                    holder.cbHibernate.isChecked = !holder.cbHibernate.isChecked
+                }
+            }
+
+            override fun getItemCount(): Int = apps.size
+
+            fun updateData(newApps: List<AppInfo>) {
+                this.apps = newApps
+                notifyDataSetChanged()
+                onSelectionChanged(getSelectedApps().size)
+            }
+
+            fun getSelectedApps(): List<AppInfo> {
+                return apps.filter { it.isSelected }
+            }
+        }
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/java/com/hibernalite/app/service/HibernationAccessibilityService.kt
+        package com.hibernalite.app.service
+
+        import android.accessibilityservice.AccessibilityService
+        import android.content.Context
+        import android.content.Intent
+        import android.net.Uri
+        import android.os.Handler
+        import android.os.Looper
+        import android.provider.Settings
+        import android.view.accessibility.AccessibilityEvent
+        import android.view.accessibility.AccessibilityNodeInfo
+        import android.widget.Toast
+        import com.hibernalite.app.R
+        import java.util.LinkedList
+        import java.util.Queue
+
+        class HibernationAccessibilityService : AccessibilityService() {
+
+            companion object {
+                var isRunning: Boolean = false
+                    private set
+
+                private val hibernationQueue: Queue<String> = LinkedList()
+                private var currentProcessingPackage: String? = null
+                private var isServiceActive = false
+
+                fun isAccessibilityEnabled(context: Context): Boolean {
+                    return isServiceActive
+                }
+
+                fun startHibernation(context: Context, packages: List<String>) {
+                    hibernationQueue.clear()
+                    hibernationQueue.addAll(packages)
+                    isRunning = true
+
+                    processNextApp(context)
+                }
+
+                private fun processNextApp(context: Context) {
+                    if (hibernationQueue.isEmpty()) {
+                        isRunning = false
+                        currentProcessingPackage = null
+                        Toast.makeText(context, R.string.toast_hibernation_complete, Toast.LENGTH_SHORT).show()
+
+                        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                        launchIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        context.startActivity(launchIntent)
+                        return
+                    }
+
+                    val pkg = hibernationQueue.poll()
+                    currentProcessingPackage = pkg
+
+                    try {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.parse("package:$pkg")
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        processNextApp(context)
+                    }
+                }
+            }
+
+            private val mainHandler = Handler(Looper.getMainLooper())
+            private var isActionPending = false
+
+            override fun onServiceConnected() {
+                super.onServiceConnected()
+                isServiceActive = true
+            }
+
+            override fun onDestroy() {
+                super.onDestroy()
+                isServiceActive = false
+                isRunning = false
+            }
+
+            override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+                if (!isRunning || event == null) return
+
+                val rootNode = rootInActiveWindow ?: return
+                val currentPkg = currentProcessingPackage ?: return
+
+                if (event.packageName?.toString() == "com.android.settings") {
+                    handleSettingsScreen(rootNode, currentPkg)
+                }
+            }
+
+            private fun handleSettingsScreen(rootNode: AccessibilityNodeInfo, currentPkg: String) {
+                if (isActionPending) return
+
+                val forceStopLabels = listOf("Force stop", "FORCE STOP", "Paksa berhenti", "Paksa Berhenti")
+                var forceStopClicked = false
+
+                for (label in forceStopLabels) {
+                    val nodes = rootNode.findAccessibilityNodeInfosByText(label)
+                    for (node in nodes) {
+                        if (node.isEnabled) {
+                            isActionPending = true
+                            node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                            forceStopClicked = true
+
+                            mainHandler.postDelayed({
+                                confirmDialogAndProceed()
+                            }, 80)
+                            break
+                        } else {
+                            mainHandler.postDelayed({
+                                skipToNextApp()
+                            }, 60)
+                            return
+                        }
+                    }
+                    if (forceStopClicked) break
+                }
+
+                mainHandler.postDelayed({
+                    if (isRunning && currentProcessingPackage == currentPkg && !forceStopClicked) {
+                        skipToNextApp()
+                    }
+                }, 400)
+            }
+
+            private fun confirmDialogAndProceed() {
+                val rootNode = rootInActiveWindow
+                if (rootNode != null) {
+                    val confirmLabels = listOf("OK", "Ok", "Oke", "Force stop", "Paksa berhenti")
+                    for (label in confirmLabels) {
+                        val nodes = rootNode.findAccessibilityNodeInfosByText(label)
+                        for (node in nodes) {
+                            if (node.isClickable && node.isEnabled) {
+                                node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                                break
+                            }
+                        }
+                    }
+                }
+
+                mainHandler.postDelayed({
+                    isActionPending = false
+                    processNextApp(this)
+                }, 60)
+            }
+
+            private fun skipToNextApp() {
+                isActionPending = false
+                processNextApp(this)
+            }
+
+            override fun onInterrupt() {
+                isRunning = false
+            }
+        }
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/java/com/hibernalite/app/widget/RamCleanerWidgetProvider.kt
+        package com.hibernalite.app.widget
+
+        import android.app.PendingIntent
+        import android.appwidget.AppWidgetManager
+        import android.appwidget.AppWidgetProvider
+        import android.content.ComponentName
+        import android.content.Context
+        import android.content.Intent
+        import android.os.Build
+        import android.widget.RemoteViews
+        import android.widget.Toast
+        import com.hibernalite.app.R
+        import com.hibernalite.app.util.MemoryHelper
+
+        class RamCleanerWidgetProvider : AppWidgetProvider() {
+
+            companion object {
+                const val ACTION_TRIGGER_CLEAN = "com.hibernalite.app.ACTION_TRIGGER_CLEAN"
+
+                fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
+                    val views = RemoteViews(context.packageName, R.layout.widget_ram_cleaner)
+
+                    val intent = Intent(context, RamCleanerWidgetProvider::class.java).apply {
+                        action = ACTION_TRIGGER_CLEAN
+                    }
+                    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    } else {
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                    }
+                    val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, flags)
+                    views.setOnClickPendingIntent(R.id.widgetRoot, pendingIntent)
+
+                    appWidgetManager.updateAppWidget(appWidgetId, views)
+                }
+            }
+
+            override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+                for (appWidgetId in appWidgetIds) {
+                    updateWidget(context, appWidgetManager, appWidgetId)
+                }
+            }
+
+            override fun onReceive(context: Context, intent: Intent) {
+                super.onReceive(context, intent)
+
+                if (intent.action == ACTION_TRIGGER_CLEAN) {
+                    val userApps = MemoryHelper.getInstalledUserApps(context)
+                    val targetPackages = userApps.filter { it.isSelected }.map { it.packageName }
+
+                    if (targetPackages.isNotEmpty()) {
+                        val freedBytes = MemoryHelper.quickClean(context, targetPackages)
+                        val freedStr = if (freedBytes > 0) MemoryHelper.formatBytes(freedBytes) else "Cache"
+
+                        val message = context.getString(
+                            R.string.widget_cleaned_format,
+                            freedStr,
+                            targetPackages.size
+                        )
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Tidak ada aplikasi untuk dihibernasi", Toast.LENGTH_SHORT).show()
+                    }
+
+                    val manager = AppWidgetManager.getInstance(context)
+                    val ids = manager.getAppWidgetIds(ComponentName(context, RamCleanerWidgetProvider::class.java))
+                    for (id in ids) {
+                        updateWidget(context, manager, id)
+                    }
+                }
+            }
+        }
+        EOF
+
+        cat << 'EOF' > hibernalite/app/src/main/java/com/hibernalite/app/MainActivity.kt
+        package com.hibernalite.app
+
+        import android.appwidget.AppWidgetManager
+        import android.content.ComponentName
+        import android.content.Context
+        import android.content.Intent
+        import android.content.res.ColorStateList
+        import android.os.Bundle
+        import android.provider.Settings
+        import android.view.View
+        import android.widget.Toast
+        import androidx.appcompat.app.AlertDialog
+        import androidx.appcompat.app.AppCompatActivity
+        import androidx.core.content.ContextCompat
+        import androidx.lifecycle.lifecycleScope
+        import androidx.recyclerview.widget.LinearLayoutManager
+        import com.hibernalite.app.adapter.AppListAdapter
+        import com.hibernalite.app.databinding.ActivityMainBinding
+        import com.hibernalite.app.model.AppInfo
+        import com.hibernalite.app.service.HibernationAccessibilityService
+        import com.hibernalite.app.util.MemoryHelper
+        import com.hibernalite.app.widget.RamCleanerWidgetProvider
+        import kotlinx.coroutines.Dispatchers
+        import kotlinx.coroutines.launch
+        import kotlinx.coroutines.withContext
+
+        class MainActivity : AppCompatActivity() {
+
+            private lateinit var binding: ActivityMainBinding
+            private lateinit var appAdapter: AppListAdapter
+            private var appsList: List<AppInfo> = emptyList()
+
+            override fun onCreate(savedInstanceState: Bundle?) {
+                super.onCreate(savedInstanceState)
+                binding = ActivityMainBinding.inflate(layoutInflater)
+                setContentView(binding.root)
+
+                setupRecyclerView()
+                setupListeners()
+                refreshRamInfo()
+                loadApps()
+            }
+
+            override fun onResume() {
+                super.onResume()
+                refreshRamInfo()
+            }
+
+            private fun setupRecyclerView() {
+                appAdapter = AppListAdapter(emptyList()) { count ->
+                    updateSelectedAppsCount(count)
+                    updateWidgets()
+                }
+                binding.rvApps.apply {
+                    layoutManager = LinearLayoutManager(this@MainActivity)
+                    adapter = appAdapter
+                    isNestedScrollingEnabled = false
+                }
+            }
+
+            private fun setupListeners() {
+                binding.btnRefresh.setOnClickListener {
+                    refreshRamInfo()
+                    loadApps()
+                }
+
+                binding.btnQuickClean.setOnClickListener {
+                    performQuickClean()
+                }
+
+                binding.btnHibernateAll.setOnClickListener {
+                    checkAccessibilityAndHibernate()
+                }
+            }
+
+            private fun refreshRamInfo() {
+                val status = MemoryHelper.getRamStatus(this)
+
+                binding.tvRamPercent.text = "${status.usedPercentage}%"
+                binding.progressBarRam.progress = status.usedPercentage
+
+                val usedStr = MemoryHelper.formatBytes(status.usedBytes)
+                val totalStr = MemoryHelper.formatBytes(status.totalBytes)
+                val availStr = MemoryHelper.formatBytes(status.availableBytes)
+
+                binding.tvRamDetails.text = getString(R.string.ram_details_format, usedStr, totalStr, availStr)
+
+                val colorRes = when {
+                    status.usedPercentage >= 85 -> R.color.ram_red
+                    status.usedPercentage >= 70 -> R.color.ram_orange
+                    else -> R.color.ram_green
+                }
+                val color = ContextCompat.getColor(this, colorRes)
+                binding.tvRamPercent.setTextColor(color)
+                binding.progressBarRam.progressTintList = ColorStateList.valueOf(color)
+            }
+
+            private fun loadApps() {
+                lifecycleScope.launch {
+                    binding.tvEmptyState.visibility = View.GONE
+
+                    val apps = withContext(Dispatchers.IO) {
+                        MemoryHelper.getInstalledUserApps(this@MainActivity)
+                    }
+
+                    appsList = apps
+                    appAdapter.updateData(apps)
+
+                    if (apps.isEmpty()) {
+                        binding.tvEmptyState.visibility = View.VISIBLE
+                    }
+                }
+            }
+
+            private fun updateSelectedAppsCount(count: Int) {
+                binding.tvAppsCount.text = getString(R.string.apps_count_format, count)
+                binding.btnHibernateAll.isEnabled = count > 0
+            }
+
+            private fun performQuickClean() {
+                val selectedPackages = appAdapter.getSelectedApps().map { it.packageName }
+                if (selectedPackages.isEmpty()) {
+                    Toast.makeText(this, "Tidak ada aplikasi yang dipilih", Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+                val freedBytes = MemoryHelper.quickClean(this, selectedPackages)
+                val freedStr = if (freedBytes > 0) MemoryHelper.formatBytes(freedBytes) else "Cache"
+                val message = getString(R.string.toast_quick_clean_done, freedStr, selectedPackages.size)
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+
+                refreshRamInfo()
+                updateWidgets()
+            }
+
+            private fun checkAccessibilityAndHibernate() {
+                val selectedPackages = appAdapter.getSelectedApps().map { it.packageName }
+                if (selectedPackages.isEmpty()) {
+                    Toast.makeText(this, "Pilih setidaknya 1 aplikasi untuk dihibernasi", Toast.LENGTH_SHORT).show()
+                    return
+                }
+
+                if (isAccessibilityServiceEnabled(this)) {
+                    Toast.makeText(this, R.string.toast_hibernating, Toast.LENGTH_SHORT).show()
+                    HibernationAccessibilityService.startHibernation(this, selectedPackages)
+                } else {
+                    showAccessibilityDialog()
+                }
+            }
+
+            private fun isAccessibilityServiceEnabled(context: Context): Boolean {
+                val expectedServiceName = "${context.packageName}/${HibernationAccessibilityService::class.java.canonicalName}"
+                val enabledServices = Settings.Secure.getString(
+                    context.contentResolver,
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+                ) ?: return false
+
+                return enabledServices.contains(expectedServiceName) || HibernationAccessibilityService.isAccessibilityEnabled(context)
+            }
+
+            private fun showAccessibilityDialog() {
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.enable_accessibility_title)
+                    .setMessage(R.string.enable_accessibility_desc)
+                    .setPositiveButton(R.string.btn_open_settings) { _, _ ->
+                        try {
+                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(this, "Tidak dapat membuka pengaturan aksesibilitas secara langsung.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .setNegativeButton(R.string.btn_cancel, null)
+                    .show()
+            }
+
+            private fun updateWidgets() {
+                val manager = AppWidgetManager.getInstance(this)
+                val ids = manager.getAppWidgetIds(ComponentName(this, RamCleanerWidgetProvider::class.java))
+                for (id in ids) {
+                    RamCleanerWidgetProvider.updateWidget(this, manager, id)
+                }
+            }
+        }
         EOF
 
     - name: Setup Gradle
