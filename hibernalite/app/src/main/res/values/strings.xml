@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">HibernaLite</string>
+    <string name="app_tagline">Ad-Free RAM &amp; App Hibernator</string>
+    <string name="ram_usage_title">RAM Usage</string>
+    <string name="ram_details_format">Used: %1$s / Total: %2$s (Free: %3$s)</string>
+    <string name="btn_hibernate_all">Hibernate Selected Apps</string>
+    <string name="btn_quick_clean">Quick RAM Clean</string>
+    <string name="apps_list_title">Apps Running / Installed</string>
+    <string name="apps_count_format">%1$d apps selected for hibernation</string>
+    <string name="enable_accessibility_title">Accessibility Service Needed</string>
+    <string name="enable_accessibility_desc">To automatically hibernate apps without root, HibernaLite needs Accessibility permission to click Force Stop in Settings. No personal data is ever collected.</string>
+    <string name="btn_open_settings">Open Settings</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="accessibility_service_desc">Automates clicking Force Stop for selected background apps to free RAM.</string>
+    <string name="toast_quick_clean_done">RAM cache released!</string>
+    <string name="toast_hibernating">Hibernating apps, please wait…</string>
+    <string name="toast_hibernation_complete">Hibernation complete! Freed background processes.</string>
+    <string name="search_hint">Search apps…</string>
+    <string name="whitelist_info">Uncheck apps you don\'t want to hibernate (e.g. WhatsApp, Alarm)</string>
+    <string name="no_apps_found">No third-party apps found</string>
+</resources>

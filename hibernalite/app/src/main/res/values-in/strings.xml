@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">HibernaLite</string>
+    <string name="app_tagline">Pembersih RAM &amp; Hibernasi Tanpa Iklan</string>
+    <string name="ram_usage_title">Penggunaan RAM</string>
+    <string name="ram_details_format">Terpakai: %1$s / Total: %2$s (Tersedia: %3$s)</string>
+    <string name="btn_hibernate_all">Hibernasi Aplikasi Terpilih</string>
+    <string name="btn_quick_clean">Pembersihan RAM Cepat</string>
+    <string name="apps_list_title">Daftar Aplikasi Latar Belakang</string>
+    <string name="apps_count_format">%1$d aplikasi dipilih untuk dihibernasi</string>
+    <string name="enable_accessibility_title">Aktivasi Aksesibilitas Diperlukan</string>
+    <string name="enable_accessibility_desc">Untuk menidurkan aplikasi secara otomatis tanpa root, HibernaLite memerlukan izin Aksesibilitas guna menekan tombol Paksa Berhenti di Pengaturan secara otomatis. Privasi Anda 100% aman tanpa koneksi internet.</string>
+    <string name="btn_open_settings">Buka Pengaturan</string>
+    <string name="btn_cancel">Batal</string>
+    <string name="accessibility_service_desc">Mengotomatiskan penekanan Paksa Berhenti pada aplikasi latar belakang untuk melegakan RAM.</string>
+    <string name="toast_quick_clean_done">Cache memori RAM berhasil dilepaskan!</string>
+    <string name="toast_hibernating">Sedang menghibernasi aplikasi, mohon tunggu…</string>
+    <string name="toast_hibernation_complete">Hibernasi selesai! RAM berhasil dibersihkan.</string>
+    <string name="search_hint">Cari aplikasi…</string>
+    <string name="whitelist_info">Hilangkan centang pada aplikasi penting (misal: WhatsApp, Alarm) agar tidak ikut ditutup</string>
+    <string name="no_apps_found">Tidak ada aplikasi pihak ketiga ditemukan</string>
+</resources>

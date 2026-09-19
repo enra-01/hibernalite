@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/windowBackground">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Top Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/app_name"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/app_tagline"
+                        android:textSize="13sp"
+                        android:textColor="?android:attr/textColorSecondary" />
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/btnRefresh"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_ram"
+                    android:contentDescription="Refresh"
+                    app:tint="@color/primary" />
+            </RelativeLayout>
+
+            <!-- RAM Status Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/card_stroke_light">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/ram_usage_title"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="?android:attr/textColorPrimary" />
+
+                        <TextView
+                            android:id="@+id/tvRamPercent"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:text="0%"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary" />
+                    </RelativeLayout>
+
+                    <!-- Progress bar -->
+                    <ProgressBar
+                        android:id="@+id/progressBarRam"
+                        style="@android:style/Widget.ProgressBar.Horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="14dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="8dp"
+                        android:progressDrawable="@drawable/bg_progress_bar"
+                        android:max="100"
+                        android:progress="65" />
+
+                    <TextView
+                        android:id="@+id/tvRamDetails"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:text="Memuat status RAM..." />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Action Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnQuickClean"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="54dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="@string/btn_quick_clean"
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_clean"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnHibernateAll"
+                    android:layout_width="0dp"
+                    android:layout_height="54dp"
+                    android:layout_weight="1.2"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/btn_hibernate_all"
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_hibernate"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+
+            <!-- Whitelist Tip -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:background="@drawable/bg_card_rounded"
+                android:padding="10dp"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:text="@string/whitelist_info" />
+
+            <!-- App List Header & Count -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/tvListHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/apps_list_title"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:id="@+id/tvAppsCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:textSize="12sp"
+                    android:textColor="@color/primary"
+                    android:text="0 aplikasi" />
+            </RelativeLayout>
+
+            <!-- App List RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvApps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                tools:listitem="@layout/item_app" />
+
+            <TextView
+                android:id="@+id/tvEmptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:text="@string/no_apps_found"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
