@@ -19,8 +19,12 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Apply Updates
+    - name: Apply MIUI Style Live RAM Widget & Pure Background Clean
       run: |
+        # Hapus file lama yang menyebabkan error AAPT
+        rm -f hibernalite/app/src/main/res/xml/accessibility_service_config.xml
+        rm -f hibernalite/app/src/main/java/com/hibernalite/app/service/HibernationAccessibilityService.kt
+
         mkdir -p hibernalite/app/src/main/java/com/hibernalite/app/widget
         mkdir -p hibernalite/app/src/main/res/xml
         mkdir -p hibernalite/app/src/main/res/values-in
@@ -48,16 +52,23 @@ jobs:
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:tools="http://schemas.android.com/tools">
+
             <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
-            <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
+            <uses-permission
+                android:name="android.permission.QUERY_ALL_PACKAGES"
+                tools:ignore="QueryAllPackagesPermission" />
+
             <application
                 android:allowBackup="true"
+                android:dataExtractionRules="@xml/data_extraction_rules"
+                android:fullBackupContent="@xml/backup_rules"
                 android:icon="@mipmap/ic_launcher"
                 android:label="@string/app_name"
                 android:roundIcon="@mipmap/ic_launcher_round"
                 android:supportsRtl="true"
                 android:theme="@style/Theme.HibernaLite"
                 tools:targetApi="31">
+
                 <activity
                     android:name=".MainActivity"
                     android:exported="true"
@@ -68,6 +79,8 @@ jobs:
                         <category android:name="android.intent.category.LAUNCHER" />
                     </intent-filter>
                 </activity>
+
+                <!-- 1x1 Home Screen Widget for Instant Pure Background RAM Clean -->
                 <receiver
                     android:name=".widget.RamCleanerWidgetProvider"
                     android:exported="true"
@@ -106,6 +119,7 @@ jobs:
             android:layout_height="match_parent"
             android:gravity="center"
             android:padding="2dp">
+
             <ImageView
                 android:id="@+id/ivWidgetGauge"
                 android:layout_width="match_parent"
@@ -198,52 +212,101 @@ jobs:
                 val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
                 val memInfo = ActivityManager.MemoryInfo()
                 actManager.getMemoryInfo(memInfo)
+
                 val total = memInfo.totalMem
                 val available = memInfo.availMem
                 val used = total - available
                 val percentage = if (total > 0) ((used * 100) / total).toInt() else 0
-                return RamStatus(total, available, used, percentage.coerceIn(0, 100))
+
+                return RamStatus(
+                    totalBytes = total,
+                    availableBytes = available,
+                    usedBytes = used,
+                    usedPercentage = percentage.coerceIn(0, 100)
+                )
             }
 
             fun formatBytes(bytes: Long): String {
-                val gb = bytes / (1024.0 * 1024.0 * 1024.0)
                 val mb = bytes / (1024.0 * 1024.0)
-                return if (gb >= 1.0) String.format(Locale.getDefault(), "%.2f GB", gb)
-                else String.format(Locale.getDefault(), "%.0f MB", mb)
+                val gb = bytes / (1024.0 * 1024.0 * 1024.0)
+
+                return if (gb >= 1.0) {
+                    String.format(Locale.getDefault(), "%.2f GB", gb)
+                } else {
+                    String.format(Locale.getDefault(), "%.0f MB", mb)
+                }
             }
 
             fun getInstalledUserApps(context: Context): List<AppInfo> {
                 val pm = context.packageManager
                 val selfPackage = context.packageName
                 val excludedPackages = getExcludedPackages(context)
-                val systemExclusions = setOf("android", "com.android.systemui", "com.android.settings", "com.android.phone", "com.google.android.gms", "com.google.android.gsf")
+
+                val systemExclusions = setOf(
+                    "android",
+                    "com.android.systemui",
+                    "com.android.settings",
+                    "com.android.phone",
+                    "com.google.android.gms",
+                    "com.google.android.gsf",
+                    "com.google.android.inputmethod.latin",
+                    "com.android.inputmethod.latin",
+                    "com.realme.launcher",
+                    "com.coloros.launcher",
+                    "com.oppo.launcher"
+                )
 
                 val installedPackages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
                 val appList = mutableListOf<AppInfo>()
 
                 for (app in installedPackages) {
                     val pkg = app.packageName
-                    if (pkg == selfPackage || systemExclusions.contains(pkg)) continue
+                    if (pkg == selfPackage || systemExclusions.contains(pkg)) {
+                        continue
+                    }
+
                     val isSystem = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0
                     val isUpdatedSystem = (app.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+
                     if (!isSystem || isUpdatedSystem) {
                         val label = pm.getApplicationLabel(app).toString()
-                        val icon = try { pm.getApplicationIcon(app) } catch (e: Exception) { null }
+                        val icon = try {
+                            pm.getApplicationIcon(app)
+                        } catch (e: Exception) {
+                            null
+                        }
+
                         val isSelected = !excludedPackages.contains(pkg)
-                        appList.add(AppInfo(label, pkg, icon, isSelected, isSystem))
+
+                        appList.add(
+                            AppInfo(
+                                appName = label,
+                                packageName = pkg,
+                                icon = icon,
+                                isSelected = isSelected,
+                                isSystemApp = isSystem
+                            )
+                        )
                     }
                 }
+
                 return appList.sortedBy { it.appName.lowercase(Locale.getDefault()) }
             }
 
             fun cleanBackgroundMemory(context: Context, packages: List<String>): Long {
                 val beforeStatus = getRamStatus(context)
                 val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+
                 for (pkg in packages) {
-                    try { actManager.killBackgroundProcesses(pkg) } catch (e: Exception) {}
+                    try {
+                        actManager.killBackgroundProcesses(pkg)
+                    } catch (e: Exception) {
+                    }
                 }
+
                 System.gc()
                 Runtime.getRuntime().gc()
+
                 val afterStatus = getRamStatus(context)
                 val freed = afterStatus.availableBytes - beforeStatus.availableBytes
                 return if (freed > 0) freed else 0L
@@ -286,8 +349,12 @@ jobs:
                 val app = apps[position]
                 holder.tvName.text = app.appName
                 holder.tvPkg.text = app.packageName
-                if (app.icon != null) holder.ivIcon.setImageDrawable(app.icon)
-                else holder.ivIcon.setImageResource(R.drawable.ic_launcher_foreground)
+
+                if (app.icon != null) {
+                    holder.ivIcon.setImageDrawable(app.icon)
+                } else {
+                    holder.ivIcon.setImageResource(R.drawable.ic_launcher_foreground)
+                }
 
                 holder.cbHibernate.setOnCheckedChangeListener(null)
                 holder.cbHibernate.isChecked = app.isSelected
@@ -311,7 +378,9 @@ jobs:
                 onSelectionChanged(getSelectedApps().size)
             }
 
-            fun getSelectedApps(): List<AppInfo> = apps.filter { it.isSelected }
+            fun getSelectedApps(): List<AppInfo> {
+                return apps.filter { it.isSelected }
+            }
         }
         EOF
 
@@ -343,8 +412,10 @@ jobs:
 
                 fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
                     val views = RemoteViews(context.packageName, R.layout.widget_ram_cleaner)
+
                     val ramStatus = MemoryHelper.getRamStatus(context)
-                    views.setImageViewBitmap(R.id.ivWidgetGauge, createMiuGaugeBitmap(ramStatus.usedPercentage))
+                    val gaugeBitmap = createMiuGaugeBitmap(ramStatus.usedPercentage)
+                    views.setImageViewBitmap(R.id.ivWidgetGauge, gaugeBitmap)
 
                     val intent = Intent(context, RamCleanerWidgetProvider::class.java).apply {
                         action = ACTION_TRIGGER_CLEAN
@@ -354,7 +425,9 @@ jobs:
                     } else {
                         PendingIntent.FLAG_UPDATE_CURRENT
                     }
-                    views.setOnClickPendingIntent(R.id.widgetRoot, PendingIntent.getBroadcast(context, 0, intent, flags))
+                    val pendingIntent = PendingIntent.getBroadcast(context, 0, intent, flags)
+                    views.setOnClickPendingIntent(R.id.widgetRoot, pendingIntent)
+
                     appWidgetManager.updateAppWidget(appWidgetId, views)
                 }
 
@@ -362,6 +435,7 @@ jobs:
                     val size = 200
                     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
                     val canvas = Canvas(bitmap)
+
                     val strokeWidth = 14f
                     val padding = 16f
                     val rect = RectF(padding, padding, size - padding, size - padding)
@@ -423,14 +497,25 @@ jobs:
 
             override fun onReceive(context: Context, intent: Intent) {
                 super.onReceive(context, intent)
+
                 if (intent.action == ACTION_TRIGGER_CLEAN) {
                     val userApps = MemoryHelper.getInstalledUserApps(context)
                     val targetPackages = userApps.filter { it.isSelected }.map { it.packageName }
+
                     if (targetPackages.isNotEmpty()) {
                         val freedBytes = MemoryHelper.cleanBackgroundMemory(context, targetPackages)
                         val freedStr = if (freedBytes > 0) MemoryHelper.formatBytes(freedBytes) else "Cache"
-                        Toast.makeText(context, context.getString(R.string.widget_cleaned_format, freedStr, targetPackages.size), Toast.LENGTH_SHORT).show()
+
+                        val message = context.getString(
+                            R.string.widget_cleaned_format,
+                            freedStr,
+                            targetPackages.size
+                        )
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Tidak ada aplikasi untuk dibersihkan", Toast.LENGTH_SHORT).show()
                     }
+
                     val manager = AppWidgetManager.getInstance(context)
                     val ids = manager.getAppWidgetIds(ComponentName(context, RamCleanerWidgetProvider::class.java))
                     for (id in ids) {
@@ -514,6 +599,7 @@ jobs:
 
             private fun refreshRamInfo() {
                 val status = MemoryHelper.getRamStatus(this)
+
                 binding.tvRamPercent.text = "${status.usedPercentage}%"
                 binding.progressBarRam.progress = status.usedPercentage
 
@@ -536,11 +622,14 @@ jobs:
             private fun loadApps() {
                 lifecycleScope.launch {
                     binding.tvEmptyState.visibility = View.GONE
+
                     val apps = withContext(Dispatchers.IO) {
                         MemoryHelper.getInstalledUserApps(this@MainActivity)
                     }
+
                     appsList = apps
                     appAdapter.updateData(apps)
+
                     if (apps.isEmpty()) {
                         binding.tvEmptyState.visibility = View.VISIBLE
                     }
@@ -564,8 +653,11 @@ jobs:
                     val freedBytes = withContext(Dispatchers.IO) {
                         MemoryHelper.cleanBackgroundMemory(this@MainActivity, selectedPackages)
                     }
+
                     val freedStr = if (freedBytes > 0) MemoryHelper.formatBytes(freedBytes) else "Cache"
-                    Toast.makeText(this@MainActivity, getString(R.string.toast_quick_clean_done, freedStr, selectedPackages.size), Toast.LENGTH_SHORT).show()
+                    val message = getString(R.string.toast_quick_clean_done, freedStr, selectedPackages.size)
+                    Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+
                     refreshRamInfo()
                     updateWidgets()
                 }
